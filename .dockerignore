@@ -1,0 +1,73 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ClimaX Database Server - Docker Ignore
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Local env files (use container env vars)
+.env
+.env.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Documentation (keep schema)
+*.md
+!README.md
+API.md
+DEPLOYMENT.md
+
+# CI/CD
+.gitlab-ci.yml
+.github/
+
+# Scripts (not needed in container)
+*.sh
+!deploy.sh
