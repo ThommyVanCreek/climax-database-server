@@ -6,6 +6,7 @@
 - **Dashboard Support**: Read-only database user for Grafana/dashboards
 - **Local Timestamps**: Accurate timezone-aware timestamps from devices
 - **Connection Pooling**: Better performance under load
+- **Docker Compose**: Full stack deployment with Vue client
 
 ## Prerequisites
 
@@ -13,7 +14,17 @@
 - Alpine 3.16 template (for LXC)
 - Network access to 172.22.0.220 (or your chosen IP)
 
-## Quick Start (Docker)
+## Deployment Options
+
+| Method | Best For | Components |
+|--------|----------|------------|
+| **LXC Container** | Dedicated home server, Proxmox | PostgreSQL + API |
+| **Docker (API only)** | Quick setup, testing | PostgreSQL + API |
+| **Docker Full Stack** | Production with web UI | PostgreSQL + API + Vue Client |
+
+---
+
+## Option 1: Proxmox LXC Container (Recommended for Home Server)
 
 ```bash
 # 1. Copy and configure environment
@@ -35,6 +46,145 @@ docker-compose --profile admin --profile dashboard up -d
 # 6. Verify
 curl http://localhost:5000/api/health
 ```
+
+## Option 1: Proxmox LXC Container (Recommended for Home Server)
+
+**On Proxmox Host:**
+
+```bash
+# Download and run
+chmod +x proxmox-create-lxc.sh
+./proxmox-create-lxc.sh
+
+# You'll be prompted for:
+# - Root password (min 8 chars)
+# - Container will be created at 172.22.0.220/24
+```
+
+**Inside Container (after creation):**
+
+```bash
+# SSH into container
+ssh root@172.22.0.220
+
+# Run setup
+chmod +x /root/lxc-setup.sh
+./lxc-setup.sh
+
+# Script will:
+# ✓ Update Alpine packages
+# ✓ Install PostgreSQL 17
+# ✓ Create database and user
+# ✓ Auto-generate API keys
+# ✓ Setup systemd service
+# ✓ Create dashboard read-only user
+```
+
+**Retrieve API Keys:**
+```bash
+# Write key (for ESP32)
+grep API_KEY_WRITE /opt/climax/.env | cut -d'=' -f2
+
+# Read key (for dashboards)
+grep API_KEY_READ /opt/climax/.env | cut -d'=' -f2
+```
+
+**Deploy Updates:**
+```bash
+# From your development machine
+./deploy.sh
+```
+
+---
+
+## Option 2: Docker Compose (API + Database Only)
+
+```bash
+# 1. Copy and configure environment
+cp .env.example .env
+
+# 2. Generate secure API keys
+python3 -c "import secrets; print('API_KEY_WRITE=' + secrets.token_urlsafe(32))"
+python3 -c "import secrets; print('API_KEY_READ=' + secrets.token_urlsafe(32))"
+
+# 3. Edit .env with generated keys and your database password
+nano .env
+
+# 4. Start API + PostgreSQL
+docker-compose up -d
+
+# 5. Verify
+curl http://localhost:5000/api/health
+```
+
+**With Admin Tools (Adminer):**
+```bash
+docker-compose --profile admin up -d
+# Access Adminer at http://localhost:8080
+```
+
+---
+
+## Option 3: Docker Full Stack (API + Database + Vue Client)
+
+Deploy the complete ClimaX stack including the web dashboard:
+
+```bash
+# 1. Configure environment
+cp .env.example .env
+nano .env  # Set DB_PASSWORD, API_KEY_WRITE, API_KEY_READ
+
+# 2. Build and start all services
+docker-compose --profile client up -d --build
+
+# Services started:
+# - PostgreSQL:  localhost:5432
+# - API Server:  localhost:5000
+# - Vue Client:  localhost:3000
+```
+
+**Customize Ports:**
+```bash
+# In .env or docker-compose command:
+API_PORT=5000        # API server port
+CLIENT_PORT=3000     # Vue client port
+ADMINER_PORT=8080    # Adminer port (if using --profile admin)
+```
+
+**Full Stack with Admin Tools:**
+```bash
+docker-compose --profile client --profile admin up -d --build
+```
+
+**Environment Variables for Client:**
+```env
+# .env additions for client
+CLIENT_PORT=3000
+CLIENT_API_URL=http://localhost:5000  # API URL the client will use
+```
+
+---
+
+## Option 4: Manual Installation
+
+```bash
+# Install dependencies
+sudo apt install postgresql python3 python3-pip
+pip install -r requirements.txt
+
+# Setup database
+createdb -U postgres climax
+psql -U postgres -d climax -f database_schema.sql
+
+# Create .env
+cp .env.example .env
+# Edit with your values
+
+# Run
+python database_server.py
+```
+
+---
 
 ## Deployment Methods
 
